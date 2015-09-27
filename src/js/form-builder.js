@@ -332,11 +332,8 @@
         'name': frmbFields[i].className,
         'label': frmbFields[i].label
       });
-      for (var attr in frmbFields[i]) {
-        if (frmbFields[i].hasOwnProperty(attr)) {
-          $field.data(attr, frmbFields[i][attr]);
-        }
-      }
+
+      $field.data('fieldData', frmbFields[i]);
       $field.html(frmbFields[i].label).appendTo(cbUL);
     }
 
@@ -411,6 +408,7 @@
       cancel: 'input, .disabled, .sortable-options, .add, .btn, .no-drag',
       // items: 'li:not(.no-fields)',
       receive: function(event, ui) {
+
         // if (doCancel) {
         //   $('li:nth-child(' + curIndex + ')', $(this)).remove();
         // }
@@ -440,24 +438,24 @@
         if (startIndex === 0) {
           cbUL.prepend(ui.item);
         } else {
-          $('li:nth-child(' + startIndex + ')', cbUL).after(ui.item);
+          $('li:eq(' + (startIndex - 1) + ')', cbUL).after(ui.item);
         }
       },
-      beforeStop: function(event, ui) {
-        var lastIndex = $('> li', $sortableFields).length - 1,
-          curIndex = ui.placeholder.index();
-        doCancel = ((curIndex <= 1) || (curIndex === lastIndex) ? true : false);
-        if (ui.placeholder.parent().hasClass('frmb-control')) {
-          doCancel = true;
-        }
-      },
+      // beforeStop: function(event, ui) {
+      //   var lastIndex = $('> li', $sortableFields).length - 1,
+      //     curIndex = ui.placeholder.index();
+      //   doCancel = ((curIndex <= 1) || (curIndex === lastIndex) ? true : false);
+      //   if (ui.placeholder.parent().hasClass('frmb-control')) {
+      //     doCancel = true;
+      //   }
+      // },
       update: function(event, ui) {
         // _helpers.stopMoving;
         elem.stopIndex = ($('li', $sortableFields).index(ui.item) === 0 ? '0' : $('li', $sortableFields).index(ui.item));
         if ($('li', $sortableFields).index(ui.item) < 0) {
           $(this).sortable('cancel');
         } else {
-          prepFieldVars($(ui.item[0]), true);
+          prepFieldVars(ui.item, true);
         }
       },
       receive: function(event, ui) {
@@ -521,17 +519,18 @@
       }
     };
 
-    var nameAttr = function(field) {
+    var nameAttr = function(name) {
       var epoch = new Date().getTime();
-      return field.data('attrs').name + '-' + epoch;
+      return name + '-' + epoch;
     };
 
     var prepFieldVars = function($field, isNew) {
       isNew = isNew || false;
-      var fType = $field.data('attrs').type,
+      var fieldData = $field.data('fieldData');
+      var fType = fieldData.attrs.type,
         values = {};
       values.label = _helpers.htmlEncode($field.attr('label'));
-      values.name = isNew ? nameAttr($field) : $field.name;
+      values.name = isNew ? nameAttr(fieldData.attrs.name) : $field.name;
       values.role = $field.attr('role');
       values.required = $field.attr('required');
       values.maxLength = $field.attr('max-length');
@@ -557,7 +556,6 @@
       $formWrap.removeClass('empty');
 
       disabledBeforeAfter();
-
     };
 
     // single line input type="text"
@@ -747,6 +745,36 @@
       _helpers.save();
     };
 
+
+    var templates = {};
+
+    templates.autocomplete = function(attrs) {
+
+    }
+
+    templates.text = function(attrs) {
+      return `<input type="${attrs.type}" placeholder="${attrs.placeholder}">`;
+    }
+
+    templates.password = templates.text;
+    templates.email = templates.text;
+    templates.date = templates.text;
+    templates.checkbox = templates.text;
+
+    templates.autocomplete = function(attrs) {
+      return `<${attrs.type}></${attrs.type}>`;
+    };
+
+    templates.select = function(attrs) {
+      let options;
+      attrs.values.reverse();
+      for (i = attrs.values.length - 1; i >= 0; i--) {
+        options += `<option value="${attrs.values[i].value.value}">${attrs.values[i].value.label}</option>`;
+      }
+      return `<${attrs.type} class="no-drag">${options}</${attrs.type}>`;
+    };
+
+
     /**
      * Generate preview markup
      * @param  {object} attrs
@@ -770,7 +798,7 @@
           break;
         case 'checkbox-group':
         case 'radio-group':
-        let type = attrs.type.replace('-group', '');
+          let type = attrs.type.replace('-group', '');
           attrs.values.reverse();
           for (i = attrs.values.length - 1; i >= 0; i--) {
             preview += `<div><input type="${type}" id="${type}-${epoch}-${i}" value="${attrs.values[i].value.value}" /><label for="${type}-${epoch}-${i}">${attrs.values[i].value.label}</label></div>`;

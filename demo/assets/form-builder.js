@@ -1,6 +1,6 @@
 /*
 formBuilder - git@github.com:kevinchappell/formBuilder.git
-Version: 1.2.0
+Version: 1.3.0
 Author: Kevin Chappell <kevin.b.chappell@gmail.com>
 */
 'use strict';
@@ -336,11 +336,8 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
         'name': frmbFields[i].className,
         'label': frmbFields[i].label
       });
-      for (var attr in frmbFields[i]) {
-        if (frmbFields[i].hasOwnProperty(attr)) {
-          $field.data(attr, frmbFields[i][attr]);
-        }
-      }
+
+      $field.data('fieldData', frmbFields[i]);
       $field.html(frmbFields[i].label).appendTo(cbUL);
     }
 
@@ -415,6 +412,7 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       cancel: 'input, .disabled, .sortable-options, .add, .btn, .no-drag',
       // items: 'li:not(.no-fields)',
       receive: function receive(event, ui) {
+
         // if (doCancel) {
         //   $('li:nth-child(' + curIndex + ')', $(this)).remove();
         // }
@@ -444,24 +442,24 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
         if (startIndex === 0) {
           cbUL.prepend(ui.item);
         } else {
-          $('li:nth-child(' + startIndex + ')', cbUL).after(ui.item);
+          $('li:eq(' + (startIndex - 1) + ')', cbUL).after(ui.item);
         }
       },
-      beforeStop: function beforeStop(event, ui) {
-        var lastIndex = $('> li', $sortableFields).length - 1,
-            curIndex = ui.placeholder.index();
-        doCancel = curIndex <= 1 || curIndex === lastIndex ? true : false;
-        if (ui.placeholder.parent().hasClass('frmb-control')) {
-          doCancel = true;
-        }
-      },
+      // beforeStop: function(event, ui) {
+      //   var lastIndex = $('> li', $sortableFields).length - 1,
+      //     curIndex = ui.placeholder.index();
+      //   doCancel = ((curIndex <= 1) || (curIndex === lastIndex) ? true : false);
+      //   if (ui.placeholder.parent().hasClass('frmb-control')) {
+      //     doCancel = true;
+      //   }
+      // },
       update: function update(event, ui) {
         // _helpers.stopMoving;
         elem.stopIndex = $('li', $sortableFields).index(ui.item) === 0 ? '0' : $('li', $sortableFields).index(ui.item);
         if ($('li', $sortableFields).index(ui.item) < 0) {
           $(this).sortable('cancel');
         } else {
-          prepFieldVars($(ui.item[0]), true);
+          prepFieldVars(ui.item, true);
         }
       },
       receive: function receive(event, ui) {
@@ -525,17 +523,18 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       }
     };
 
-    var nameAttr = function nameAttr(field) {
+    var nameAttr = function nameAttr(name) {
       var epoch = new Date().getTime();
-      return field.data('attrs').name + '-' + epoch;
+      return name + '-' + epoch;
     };
 
     var prepFieldVars = function prepFieldVars($field, isNew) {
       isNew = isNew || false;
-      var fType = $field.data('attrs').type,
+      var fieldData = $field.data('fieldData');
+      var fType = fieldData.attrs.type,
           values = {};
       values.label = _helpers.htmlEncode($field.attr('label'));
-      values.name = isNew ? nameAttr($field) : $field.name;
+      values.name = isNew ? nameAttr(fieldData.attrs.name) : $field.name;
       values.role = $field.attr('role');
       values.required = $field.attr('required');
       values.maxLength = $field.attr('max-length');
@@ -745,6 +744,32 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
 
       lastID++;
       _helpers.save();
+    };
+
+    var templates = {};
+
+    templates.autocomplete = function (attrs) {};
+
+    templates.text = function (attrs) {
+      return '<input type="' + attrs.type + '" placeholder="' + attrs.placeholder + '">';
+    };
+
+    templates.password = templates.text;
+    templates.email = templates.text;
+    templates.date = templates.text;
+    templates.checkbox = templates.text;
+
+    templates.autocomplete = function (attrs) {
+      return '<' + attrs.type + '></' + attrs.type + '>';
+    };
+
+    templates.select = function (attrs) {
+      var options = undefined;
+      attrs.values.reverse();
+      for (i = attrs.values.length - 1; i >= 0; i--) {
+        options += '<option value="' + attrs.values[i].value.value + '">' + attrs.values[i].value.label + '</option>';
+      }
+      return '<' + attrs.type + ' class="no-drag">' + options + '</' + attrs.type + '>';
     };
 
     /**
@@ -1149,6 +1174,74 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
 })(jQuery);
 
 // toXML is a jQuery plugin that turns our form editor into XML
+(function ($) {
+  'use strict';
+  $.fn.toXML = function (options) {
+    var defaults = {
+      prepend: '',
+      attributes: ['class']
+    };
+    var opts = $.extend(defaults, options);
+
+    var serialStr = '';
+
+    // Begin the core plugin
+    this.each(function () {
+      var liCount = 0;
+      var c = 1;
+
+      if ($(this).children().length >= 1) {
+        serialStr += '<form-template>\n\t<fields>';
+
+        // build new xml
+        $(this).children().each(function () {
+          var $field = $(this);
+          if (!($field.hasClass('moving') || $field.hasClass('disabled'))) {
+            for (var att = 0; att < opts.attributes.length; att++) {
+              var required = $('input.required', $field).is(':checked') ? 'required="true" ' : 'required="false" ',
+                  multipleChecked = $('input[name="multiple"]', $field).is(':checked'),
+                  multiple = multipleChecked ? 'style="multiple" ' : '',
+                  t = $field.attr(opts.attributes[att]),
+                  // field type
+              type = 'type="' + t + '" ',
+                  fName = 'name="' + $('input.fld-name', $field).val() + '" ',
+                  fLabel = 'label="' + $('input.fld-label', $field).val() + '" ',
+                  roleVals = $.map($('input.roles-field:checked', $field), function (n) {
+                return n.value;
+              }).join(','),
+                  roles = roleVals !== '' ? 'role="' + roleVals + '" ' : '',
+                  desc = 'description="' + $('input.fld-description', $field).val() + '" ',
+                  maxLengthVal = $('input.fld-max-length', $field).val(),
+                  maxLength = 'max-length="' + (maxLengthVal !== undefined ? maxLengthVal : '') + '" ',
+                  fSlash = t !== 'select' && t !== 'checkbox-group' ? '/' : '';
+
+              serialStr += '\n\t\t<field ' + fName + fLabel + multiple + roles + desc + (maxLengthVal !== '' ? maxLengthVal !== undefined ? maxLength : '' : '') + required + type + fSlash + '>';
+
+              if (t === 'select' || t === 'checkbox-group') {
+                c = 1;
+                $('input[type=text][class=option]', $field).each(function () {
+                  if ($(this).attr('name') !== 'title') {
+                    var selected = $(this).prev().is(':checked') ? ' selected="true"' : '';
+                    serialStr += '\n\t\t\t<option' + selected + '>' + $(this).val() + '</option>';
+                  }
+                  c++;
+                });
+                serialStr += '\n\t\t</field>';
+              }
+            }
+          }
+          liCount++;
+        });
+        serialStr += '\n\t</fields>\n</form-template>';
+      } // if "$(this).children().length >= 1"
+    });
+    return serialStr;
+  };
+})(jQuery);
+
+// toXML is a jQuery plugin that turns our form editor into custom XML
+'use strict';
+
 (function ($) {
   'use strict';
   $.fn.toXML = function (options) {

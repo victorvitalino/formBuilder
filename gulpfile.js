@@ -22,7 +22,8 @@ var files = {
     'test/**/*.spec.js'
   ],
   js: [
-    'src/js/form-builder.js'
+    'src/js/form-builder.js',
+    'src/js/to-xml.js'
   ],
   sass: [
     'src/sass/form-builder.scss'
