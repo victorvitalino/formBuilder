@@ -556,6 +556,7 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       }
 
       appendNewField(values);
+      appendField(fieldData);
 
       $formWrap.removeClass('empty');
 
@@ -566,10 +567,12 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
     var appendTextInput = function appendTextInput(values) {
       appendFieldLi(opts.messages.text, advFields(values), values);
     };
+
     // multi-line textarea
     var appendTextarea = function appendTextarea(values) {
       appendFieldLi(opts.messages.richText, advFields(values), values);
     };
+
     // append checkbox
     var appendCheckbox = function appendCheckbox(values) {
       appendFieldLi(opts.messages.checkbox, advFields(values), values);
@@ -623,6 +626,43 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
         //   }
         // }
       }); // making the dynamically added option fields sortable.
+    };
+
+    var appendField = function appendField(fieldData) {
+      var label = $(field).find('input[name="label"]').val() !== '' ? $(field).find('input[name="label"]').val() : title;
+
+      var li = '',
+          delBtn = '<a id="del_' + lastID + '" class="del-button btn delete-confirm" href="#" title="' + opts.messages.removeMessage + '">' + opts.messages.remove + '</a>',
+          toggleBtn = '<a id="frm-' + lastID + '" class="toggle-form btn icon-pencil" href="#" title="' + opts.messages.hide + '"></a> ',
+          required = values.required,
+          tooltip = values.description !== '' ? '<span class="tooltip-element" tooltip="' + values.description + '">?</span>' : '';
+
+      li += '<li id="frm-' + lastID + '-item" class="' + values.type + ' form-field">';
+      li += '<div class="legend">';
+      li += delBtn;
+      li += '<span id="txt-title-' + lastID + '" class="field-label">' + label + '</span>' + tooltip + '<span class="required-asterisk" ' + (required === 'true' ? 'style="display:inline"' : '') + '> *</span>' + toggleBtn + '</div>';
+      li += fieldPreview(values);
+      li += '<div id="frm-' + lastID + '-fld" class="frm-holder">';
+      li += '<div class="form-elements">';
+      li += '<div class="frm-fld">';
+      li += '<label>&nbsp;</label>';
+      li += '<input class="required" type="checkbox" value="1" name="required-' + lastID + '" id="required-' + lastID + '"' + (required === 'true' ? ' checked="checked"' : '') + ' /><label class="required_label" for="required-' + lastID + '">' + opts.messages.required + '</label>';
+      li += '</div>';
+      li += field;
+      li += '</div>';
+      li += '</div>';
+      li += '</li>';
+
+      if (elem.stopIndex) {
+        $('li', $sortableFields).eq(elem.stopIndex).after(li);
+      } else {
+        $sortableFields.append(li);
+      }
+
+      $(document.getElementById('frm-' + lastID + '-item')).hide().slideDown(250);
+
+      lastID++;
+      _helpers.save();
     };
 
     var appendNewField = function appendNewField(values) {
