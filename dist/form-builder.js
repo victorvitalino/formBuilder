@@ -317,7 +317,11 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
         },
         attrs: {
           type: elem,
-          'class': elem + '-input'
+          'class': elem + '-input',
+          required: {
+            value: 1,
+            type: 'checkbox'
+          }
         }
       };
 
@@ -912,14 +916,14 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
     });
 
     // Attach a callback to toggle required asterisk
-    $sortableFields.delegate('input.required', 'click', function () {
+    $sortableFields.on('click', '.edit-required', function () {
       var requiredAsterisk = $(this).parents('li.form-field').find('.required-asterisk');
       requiredAsterisk.toggle();
     });
 
     // Attach a callback to toggle roles visibility
-    $sortableFields.delegate('input[name="enable_roles"]', 'click', function () {
-      var roles = $(this).siblings('div.available-roles'),
+    $sortableFields.on('click', '.edit-roles', function () {
+      var roles = $(this).siblings('.property-options'),
           enableRolesCB = $(this);
       roles.slideToggle(250, function () {
         if (!enableRolesCB.is(':checked')) {
@@ -1033,13 +1037,11 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
 
     // Save Idea Template
     $(document.getElementById(frmbID + '-save')).click(function (e) {
-      if ($(this).find('.ldkInlineEdit').length === 0) {
-        e.preventDefault();
-        if (!$formWrap.hasClass('edit-xml')) {
-          _helpers.save();
-        }
-        _helpers.validateForm(e);
+      e.preventDefault();
+      if (!$formWrap.hasClass('edit-xml')) {
+        _helpers.save();
       }
+      _helpers.validateForm(e);
     });
 
     var triggerDevMode = false,
