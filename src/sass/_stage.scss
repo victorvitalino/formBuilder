@@ -126,7 +126,7 @@
     }
   }
 
-  .frm-holder {
+  .field-properties {
     display: none;
   }
 
@@ -136,6 +136,10 @@
 
   .prev-holder {
     display: block;
+
+    & label {
+      display: none;
+    }
   }
 
   .required_asterisk {

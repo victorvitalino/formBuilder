@@ -23,7 +23,8 @@ textarea.idea-template {
   }
 }
 
-.cb-wrap, .frmb-wrap {
+.cb-wrap,
+.frmb-wrap {
   vertical-align: top;
 }
 
@@ -92,7 +93,9 @@ textarea.idea-template {
   color: $grey;
 }
 
-.action-links a.clear-all:hover, .del-button:hover, ul.frmb span.required {
+.action-links a.clear-all:hover,
+.del-button:hover,
+ul.frmb span.required {
   color: $error;
 }
 
@@ -108,28 +111,29 @@ textarea.idea-template {
   color: $black;
 }
 
-.form-elements {
+.field-properties {
   background: #f7f7f7;
   box-shadow: inset 0 0 2px 0 #999;
   border-radius: 3px;
   margin: 5px 0 0;
-  padding: 10px 5px;
+  padding: 2%;
 }
 
-.form-elements .false-label, .form-elements .fields {
+.field-properties .false-label,
+.field-properties .fields {
   margin-top: 10px;
 }
 
-.form-elements .fields {
+.field-properties .fields {
   width: 70%;
   float: left;
 }
 
-.form-elements .fields .add-area .add {
+.field-properties .fields .add-area .add {
   clear: both;
 }
 
-.form-elements .fields .remove {
+.field-properties .fields .remove {
   right: 11px;
   top: 50%;
   margin-top: -11px;
@@ -137,7 +141,8 @@ textarea.idea-template {
   border-radius: 0 3px 3px 0;
 }
 
-.form-elements .sortable-options li:nth-child(1) .remove, .form-elements .sortable-options li:nth-child(2) .remove {
+.field-properties .sortable-options li:nth-child(1) .remove,
+.field-properties .sortable-options li:nth-child(2) .remove {
   display: none;
 }
 
@@ -149,90 +154,113 @@ ol.sortable-options li {
   cursor: move;
 }
 
-.form-elements .fields div {
+.field-properties .fields div {
   clear: both;
   position: relative;
 }
 
-.form-elements .fields input[type=checkbox], .form-elements .fields input[type=radio] {
+.field-properties .fields input[type=checkbox],
+.field-properties .fields input[type=radio] {
   float: left;
   margin-right: 5px;
 }
 
-.form-elements .fields input[type=text] {
+.field-properties .fields input[type=text] {
   width: 39%;
   margin-right: 2%;
 }
 
-.form-elements input[type=text] {
-  width: 70%;
+.field-properties input[type=text] {
+  width: calc( 80% - 4px);
   transition: background 250ms ease-in-out;
-  padding: 5px;
+  padding: 1%;
   border: 1px solid #AFAFAB;
   background-color: $white;
 }
 
-.form-elements input[type=text].error {
+.field-properties input[type=text].error {
   -webkit-border-radius: 0;
   border-radius: 0;
   border: 1px solid $error;
 }
 
-.form-elements input[type=text].fld-max-length {
+.field-properties input[type=text].fld-max-length {
   width: 10%;
 }
 
-.form-elements input.field_error {
+.field-properties input.field_error {
   background: $off-white;
   border: 1px solid #afafab;
 }
 
-.form-elements .false-label, .form-elements label {
-  width: 15%;
+.field-properties .false-label,
+.field-properties label {
+  width: 16%;
   float: left;
-  margin-left: 5px;
-  padding-right: 5%;
+  padding-right: 2%;
   font-weight: 700;
-  clear: left;
   text-align: right;
-  line-height: 32px;
 }
 
-.form-elements label.multiple, .form-elements label.required_label, .form-elements label.roles_label {
+.field-properties label.multiple,
+.field-properties label.required_label,
+.field-properties label.roles_label {
   float: none;
   display: inline;
   font-weight: 400;
   width: auto;
 }
 
-.form-elements label em {
+.field-properties label em {
   display: block;
   font-weight: 400;
   font-size: 0.75em;
 }
 
-.form-elements label.max-length-label {
+.field-properties label.max-length-label {
   line-height: 1em;
 }
 
-.form-elements .allow-multi input {
+.field-properties .allow-multi input {
   margin-top: 10px;
 }
 
-.form-elements .allow-multi, .form-elements .name_wrap, .form-elements .select-option {
+.field-properties .allow-multi,
+.field-properties .name_wrap,
+.field-properties .select-option {
   // display: none;
 }
 
-.allow-select .form-elements .allow-multi, .allow-select .form-elements .select-option, .edit-names .form-elements .name_wrap {
+.allow-select .field-properties .allow-multi,
+.allow-select .field-properties .select-option,
+.edit-names .field-properties .name_wrap {
   display: block !important;
 }
 
-.frm-fld {
+.property-options {
+  float: right;
+  width: calc(78% - 4px);
+  background: #eee;
+  padding: 2%;
+  margin-right: 2px;
+  border: 1px solid #afafab;
+
+  .roles-wrap & {
+    display: none;
+  }
+
+  label {
+    float: none;
+    width: auto;
+  }
+}
+
+.field-property {
   clear: left;
   padding: 5px 0;
 }
 
-.frm-fld .available-roles {
+.field-property .available-roles {
   display: none;
   padding: 5px 10px;
   margin: 5px 0 10px 133px;
@@ -242,23 +270,27 @@ ol.sortable-options li {
   box-shadow: inset 0 0 2px 0 #999;
 }
 
-.form-elements .available-roles label {
+.field-properties .available-roles label {
   font-weight: 400;
   width: auto;
   float: none;
   display: inline;
 }
 
-.form-elements .available-roles input {
+.field-properties .available-roles input {
   display: inline;
   top: auto;
 }
 
-.form-elements, .frm-fld, .multi-row span, textarea {
+.field-properties,
+.field-property,
+.multi-row span,
+textarea {
   display: block;
 }
 
-.form-elements:after, .frm-fld:after {
+.field-properties:after,
+.field-property:after {
   content: ".";
   display: block;
   height: 0;
@@ -266,11 +298,15 @@ ol.sortable-options li {
   visibility: hidden;
 }
 
-.form-elements .fields div:hover, .frmb .legend, .frmb .prev-holder, .frmb .prev-holder * {
+.field-properties .fields div:hover,
+.frmb .legend,
+.frmb .prev-holder,
+.frmb .prev-holder * {
   cursor: move;
 }
 
-.prev-holder input[type=checkbox], .prev-holder input[type=radio] {
+.prev-holder input[type=checkbox],
+.prev-holder input[type=radio] {
   margin-right: 5px;
 }
 
@@ -287,7 +323,8 @@ ol.sortable-options li {
   font-size: 12px;
 }
 
-.frmb-tt:after, .frmb-tt:before {
+.frmb-tt:after,
+.frmb-tt:before {
   content: '';
   position: absolute;
   border-style: solid;
@@ -311,13 +348,17 @@ ol.sortable-options li {
   color: $white;
 }
 
-.frmb li.moving, .frmb li.ui-sortable-helper, .frmb-control li.moving, .frmb-control li.ui-sortable-helper {
+.frmb li.moving,
+.frmb li.ui-sortable-helper,
+.frmb-control li.moving,
+.frmb-control li.ui-sortable-helper {
   transition: box-shadow 250ms ease-in-out;
   box-shadow: 2px 2px 6px 0 $grey;
   border: 1px solid $white;
 }
 
-.frmb li:hover .del-button, .frmb li:hover .toggle-form {
+.frmb li:hover .del-button,
+.frmb li:hover .toggle-form {
   filter: alpha(opacity = 100);
   -moz-opacity: 1;
   -khtml-opacity: 1;
@@ -356,7 +397,8 @@ ol.sortable-options li {
   }
 }
 
-.frmb-control, table.form ul.frmb-control {
+.frmb-control,
+table.form ul.frmb-control {
   margin: 0;
   padding: 0;
   min-width: 208px;
@@ -373,7 +415,8 @@ ol.sortable-options li {
   margin-top: 0;
 }
 
-.action-links a.export-xml:hover, .toggle-form.closed:hover {
+.action-links a.export-xml:hover,
+.toggle-form.closed:hover {
   color: #6fc245;
 }
 
@@ -498,6 +541,7 @@ ul.frmb {
 }
 
 /*   ------------   TOOLTIP   ------------   */
+
 *[tooltip] {
   position: relative;
 }
