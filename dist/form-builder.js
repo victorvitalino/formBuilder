@@ -105,6 +105,12 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
         doCancel,
         _helpers = {};
 
+    _helpers.uniqueArray = function (arrArg) {
+      return arrArg.filter(function (elem, pos, arr) {
+        return arr.indexOf(elem) == pos;
+      });
+    };
+
     /**
      * Callback for when a drag begins
      * @param  {object} event
@@ -187,9 +193,14 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       $('.prev-holder', field).html(preview);
     };
 
+    _helpers.nameAttr = function (type) {
+      var epoch = new Date().getTime();
+      return type + '-' + epoch;
+    };
+
     // update preview to label
     _helpers.updateMultipleSelect = function () {
-      $sortableFields.delegate('input[name="multiple"]', 'change', function () {
+      $sortableFields.on('change', 'input[name="multiple"]', function () {
         var options = $(this).parents('.fields:eq(0)').find('.sortable-options input.select-option');
         if (this.checked) {
           options.each(function () {
@@ -288,6 +299,46 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       return template;
     };
 
+    var prepProperties = function prepProperties(fieldData) {
+
+      var properties = Object.assign({}, {
+        label: fieldData.label
+      }, fieldData.attrs, fieldData.meta),
+          defaultOrder = ['required', 'label', 'description', 'class', 'roles', 'name'],
+          order;
+
+      properties.name = properties.name || _helpers.nameAttr(properties.type);
+
+      // if field type is not checkbox, checkbox/radio group or select list, add max length
+      if ($.inArray(properties.type, ['checkbox', 'select', 'checkbox-group', 'date', 'autocomplete']) === -1 && !properties.maxLength) {
+        properties.maxLength = '';
+        defaultOrder.push('maxLength');
+      }
+
+      var availableRoles = properties.roles.map(function (elem) {
+        elem.type = 'checkbox';
+        return elem;
+      });
+
+      properties.roles = {
+        options: availableRoles,
+        value: 1,
+        type: 'checkbox'
+      };
+
+      delete properties.type;
+
+      order = _helpers.uniqueArray(defaultOrder.concat(Object.keys(properties)));
+
+      var sortedProperties = order.map(function (property) {
+        if (properties.hasOwnProperty(property)) {
+          return properties[property];
+        }
+      });
+
+      return sortedProperties;
+    };
+
     var opts = $.extend(defaults, options),
         elem = $(element),
         frmbID = 'frmb-' + $('ul[id^=frmb-]').length++;
@@ -324,6 +375,30 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
           }
         }
       };
+
+      fieldData.properties = prepProperties(fieldData);
+
+      console.log(fieldData.properties);
+
+      if ($.inArray(elem, ['select', 'checkbox-group', 'radio-group']) !== -1) {
+        fieldData.options = [{
+          label: 'Option 1',
+          value: 'option-1'
+        }, {
+          label: 'Option 2',
+          value: 'option-2'
+        }];
+      }
+
+      Object.observe(fieldData, function (changes) {
+        // console.log(changes);
+        changes.forEach(function (change) {
+          //   // Any time name or title change, update the greeting
+          //   if (change.name === 'name' || change.name === 'title') {
+          //     updateGreeting();
+          //   }
+        });
+      });
 
       return $('<li/>', fieldData.attrs).data('fieldData', fieldData).html(fieldData.label).removeAttr('type');
     });
@@ -498,11 +573,6 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       }
     };
 
-    var nameAttr = function nameAttr(type) {
-      var epoch = new Date().getTime();
-      return type + '-' + epoch;
-    };
-
     var prepFieldVars = function prepFieldVars($field) {
       var fieldData = $field.data('fieldData');
 
@@ -534,7 +604,7 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
           name = _helpers.safename(values.name),
           multiDisplay = values.type === 'checkbox-group' ? 'none' : 'none';
 
-      field += advFields(values);
+      field += fieldProperties(values);
       field += '<div class="false-label">' + opts.labels.selectOptions + '</div>';
       field += '<div class="fields">';
 
@@ -564,18 +634,15 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
     var appendField = function appendField(fieldData) {
       var li = '',
           delBtn = _helpers.markup('a', {
-        'class': 'del-button btn delete-confirm',
+        'class': 'del-button btn',
         title: opts.labels.removeMessage,
         id: 'del_' + lastID
       }, opts.labels.remove),
-
-      // delBtn = '<a id="del_' + lastID + '" class="del-button btn delete-confirm" href="#" title="' + opts.labels.removeMessage + '">' + opts.labels.remove + '</a>',
-      toggleBtn = _helpers.markup('a', {
+          toggleBtn = _helpers.markup('a', {
         id: 'frm-' + lastID,
         'class': 'toggle-form btn icon-pencil',
         title: opts.labels.hide
       }),
-          type = fieldData.attrs.type,
           label = _helpers.markup('span', {
         'class': 'field-label'
       }, fieldData.label),
@@ -593,11 +660,11 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       var liContent = _helpers.markup('div', {
         id: 'frm-' + lastID + '-fld',
         'class': 'field-properties'
-      }, advFields(fieldData));
+      }, fieldProperties(fieldData.properties));
 
       li = _helpers.markup('li', {
         id: 'frm-' + lastID + '-item',
-        'class': type + ' form-field'
+        'class': fieldData.attrs.type + ' form-field'
       }, [legend, fieldPreview(fieldData), liContent]);
 
       if (elem.stopIndex) {
@@ -632,66 +699,34 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
      * @param  {object} fieldData configuration object for field
      * @return {string}        markup for advanced fields
      */
-    var advFields = function advFields(fieldData) {
-
-      var fieldProperty = [],
-          properties = Object.assign({}, {
-        label: fieldData.label
-      }, fieldData.attrs, fieldData.meta);
-
-      properties.name = properties.name || nameAttr(properties.type);
-
-      // if field type is not checkbox, checkbox/radio group or select list, add max length
-      if ($.inArray(properties.type, ['checkbox', 'select', 'checkbox-group', 'date', 'autocomplete']) < 0 && !properties.maxLength) {
-        properties.maxLength = '';
-      }
-
-      var availableRoles = properties.roles.map(function (elem, index) {
-        elem.type = 'checkbox';
-        return elem;
+    var fieldProperties = function fieldProperties(properties) {
+      console.log(properties);
+      var fieldProperties = properties.map(function (property) {
+        var field = _helpers.markup('div', {
+          'class': 'field-property ' + property + '-wrap'
+        }, fieldSetting(property, properties[property]));
+        return field;
       });
 
-      properties.roles = {
-        fields: availableRoles,
-        value: 1,
-        type: 'checkbox'
-      };
-
-      delete properties.type;
-
-      for (var property in properties) {
-        if (properties.hasOwnProperty(property)) {
-          var propertyId = property + '-' + lastID,
-              _field = _helpers.markup('div', {
-            'class': 'field-property ' + property + '-wrap'
-          }, fieldSetting(property, properties[property]));
-          fieldProperty.push(_field);
-        }
-      }
-
-      return fieldProperty;
+      return fieldProperties;
     };
 
     var fieldSetting = function fieldSetting(property, value) {
       var type = arguments.length <= 2 || arguments[2] === undefined ? 'text' : arguments[2];
-      var label = arguments.length <= 3 || arguments[3] === undefined ? undefined : arguments[3];
+      var label = arguments.length <= 3 || arguments[3] === undefined ? '' : arguments[3];
 
       var propertyId = (property + '-' + lastID).replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(),
           setting = [],
           options = [],
-          fields = [],
-          label = value.label || label || opts.labels[property.toCamelCase()] || property.toUpperCase();
+          fields = [];
 
-      if (value.fields) {
-        fields = fieldSetting(property, value.fields);
+      if (value.options) {
+        fields = fieldSetting(property, value.options);
       }
 
+      label = value.label || label || opts.labels[property.toCamelCase()] || property.toUpperCase();
       type = value.type || type;
       value = value.value || value;
-
-      if (property === 'roles') {
-        console.log(value);
-      }
 
       if ($.isArray(value)) {
         options = value.map(function (val, index) {
@@ -738,8 +773,8 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       field.text = function (fieldData) {
         var fieldAttrs = attrString(fieldData.attrs),
             field = '<input ' + fieldAttrs + '>',
-            value = fieldData.attrs.value ? fieldData.attrs.value : '',
-            textArea = '<textarea ' + fieldAttrs + '>' + fieldData.attrs.value + '</textarea>',
+            value = fieldData.attrs.value || '',
+            textArea = '<textarea ' + fieldAttrs + '>' + value + '</textarea>',
             fieldLabel = '<label for="' + fieldData.attrs.id + '">' + fieldData.label + '</label>',
             templates = {};
 
@@ -761,13 +796,15 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       field.autocomplete = field.text;
 
       field.select = function (fieldData) {
+        console.log(fieldData);
         var options = undefined,
-            attrs = fieldData.attrs;
-        attrs.values.reverse();
-        for (i = attrs.values.length - 1; i >= 0; i--) {
-          options += '<option value="' + attrs.values[i].value.value + '">' + attrs.values[i].value.label + '</option>';
+            attrs = fieldData.attrs,
+            i = undefined;
+        for (i = fieldData.options - 1; i >= 0; i--) {
+          console.log(fieldData.options[i]);
+          options += '<option value="' + fieldData.options[i].value + '">' + fieldData.options[i].label + '</option>';
         }
-        return '<' + attrs.type + ' class="no-drag">' + options + '</' + attrs.type + '>';
+        return '<' + attrs.type + '>' + options + '</' + attrs.type + '>';
       };
 
       return '<div class="prev-holder">' + field[fieldData.attrs.type](fieldData) + '</div>';
@@ -800,7 +837,7 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
     // ---------------------- UTILITIES ---------------------- //
 
     // delete options
-    $sortableFields.delegate('.remove', 'click', function (e) {
+    $sortableFields.on('click', '.remove', function (e) {
       e.preventDefault();
       var optionsCount = $(this).parents('.sortable-options:eq(0)').children('li').length;
       if (optionsCount <= 2) {
@@ -813,7 +850,7 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
     });
 
     // toggle fields
-    $sortableFields.delegate('.toggle-form', 'click', function (e) {
+    $sortableFields.on('click', '.toggle-form', function (e) {
       e.preventDefault();
       var targetID = $(this).attr('id');
       $(this).toggleClass('open').parent().next('.prev-holder').slideToggle(250);
@@ -853,7 +890,7 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
     _helpers.updateMultipleSelect();
 
     // format name attribute
-    $sortableFields.delegate('input[name="name"]', 'keyup', function () {
+    $sortableFields.on('keyup', '.edit-name', function () {
       $(this).val(_helpers.safename($(this).val()));
       if ($(this).val() === '') {
         $(this).addClass('field_error').attr('placeholder', opts.labels.cannotBeEmpty);
@@ -867,7 +904,7 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
     });
 
     // Delete field
-    $sortableFields.delegate('.del-button', 'click', function (e) {
+    $sortableFields.on('click', '.del-button', function (e) {
       e.preventDefault();
 
       // lets see if the user really wants to remove this field... FOREVER
@@ -933,17 +970,17 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
     });
 
     // Attach a callback to add new checkboxes
-    $sortableFields.delegate('.add-checkbox', 'click', function () {
+    $sortableFields.on('click', '.add-checkbox', function () {
       $(this).parent().before(selectFieldOptions());
       return false;
     });
 
-    $sortableFields.delegate('li.disabled .form-element', 'mouseenter', function () {
+    $sortableFields.on('mouseenter', 'li.disabled .form-element', function () {
       _helpers.disabledTT($(this));
     });
 
     // Attach a callback to add new options
-    $sortableFields.delegate('.add-option', 'click', function (e) {
+    $sortableFields.on('click', '.add-option', function (e) {
       e.preventDefault();
       var isMultiple = $(this).parents('.fields').first().find('input[name="multiple"]')[0].checked,
           name = $(this).parents('.fields').find('.select-option:eq(0)').attr('name');
@@ -952,13 +989,13 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
     });
 
     // Attach a callback to close link
-    $sortableFields.delegate('.close_field', 'click', function (e) {
+    $sortableFields.on('click', '.close_field', function (e) {
       e.preventDefault();
       $(this).parents('li.form-field').find('.toggle-form').trigger('click');
     });
 
     // Attach a callback to add new radio fields
-    $sortableFields.delegate('.add_rd', 'click', function (e) {
+    $sortableFields.delegate('click', '.add_rd', function (e) {
       e.preventDefault();
       $(this).parent().before(selectFieldOptions(false, $(this).parents('.field-properties').attr('id')));
     });
