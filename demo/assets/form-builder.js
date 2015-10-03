@@ -77,6 +77,7 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
         off: 'Off',
         on: 'On',
         optional: 'optional',
+        optionas: 'Options',
         optionLabelPlaceholder: 'Label',
         optionValuePlaceholder: 'Value',
         optionEmpty: 'Option value required',
@@ -107,7 +108,7 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
 
     _helpers.uniqueArray = function (arrArg) {
       return arrArg.filter(function (elem, pos, arr) {
-        return arr.indexOf(elem) == pos;
+        return arr.indexOf(elem) === pos;
       });
     };
 
@@ -193,6 +194,11 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       $('.prev-holder', field).html(preview);
     };
 
+    /**
+     * Generate unique name with epoch timestamp
+     * @param  {string} type eg. 'text'
+     * @return {string}      'text-1443885404543'
+     */
     _helpers.nameAttr = function (type) {
       var epoch = new Date().getTime();
       return type + '-' + epoch;
@@ -222,6 +228,10 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       return $('<div/>').html(value).text();
     };
 
+    /**
+     * Some basic validation before submitting our form to the backend
+     * @return {void}
+     */
     _helpers.validateForm = function () {
       var errors = [];
       // check for empty field labels
@@ -252,6 +262,11 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       }
     };
 
+    /**
+     * Display a custom tooltip for disabled fields.
+     * @param  {object} field [description]
+     * @return {void}
+     */
     _helpers.disabledTT = function (field) {
       var title = field.attr('data-tooltip');
       if (title) {
@@ -299,13 +314,22 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       return template;
     };
 
+    /**
+     * Prepare the properties for the field so they can be generated and edited later on.
+     * @param  {object} fieldData
+     * @return {array}            an array of property objects
+     */
     var prepProperties = function prepProperties(fieldData) {
 
       var properties = Object.assign({}, {
         label: fieldData.label
       }, fieldData.attrs, fieldData.meta),
-          defaultOrder = ['required', 'label', 'description', 'class', 'roles', 'name'],
-          order;
+          availableRoles = properties.roles.map(function (elem) {
+        elem.type = 'checkbox';
+        return elem;
+      }),
+          sortedProperties,
+          defaultOrder = ['required', 'label', 'description', 'class', 'roles', 'name'];
 
       properties.name = properties.name || _helpers.nameAttr(properties.type);
 
@@ -315,11 +339,6 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
         defaultOrder.push('maxLength');
       }
 
-      var availableRoles = properties.roles.map(function (elem) {
-        elem.type = 'checkbox';
-        return elem;
-      });
-
       properties.roles = {
         options: availableRoles,
         value: 1,
@@ -328,12 +347,16 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
 
       delete properties.type;
 
-      order = _helpers.uniqueArray(defaultOrder.concat(Object.keys(properties)));
-
-      var sortedProperties = order.map(function (property) {
-        if (properties.hasOwnProperty(property)) {
-          return properties[property];
+      sortedProperties = _helpers.uniqueArray(defaultOrder.concat(Object.keys(properties))).map(function (elem) {
+        var property = {
+          name: elem
+        };
+        if (typeof properties[elem] === 'object') {
+          Object.assign(property, properties[elem]);
+        } else {
+          property.value = properties[elem];
         }
+        return property;
       });
 
       return sortedProperties;
@@ -356,7 +379,7 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
     });
 
     // Setup the input fields
-    var frmbFields = fieldTypes.map(function (elem, index) {
+    var frmbFields = fieldTypes.map(function (elem) {
 
       // be sure element is converted to camelCase to get label
       var fieldLabel = elem.toCamelCase(),
@@ -378,27 +401,16 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
 
       fieldData.properties = prepProperties(fieldData);
 
-      console.log(fieldData.properties);
-
       if ($.inArray(elem, ['select', 'checkbox-group', 'radio-group']) !== -1) {
         fieldData.options = [{
-          label: 'Option 1',
-          value: 'option-1'
-        }, {
-          label: 'Option 2',
-          value: 'option-2'
+          fields: [{
+            value: 'Option 1 Label'
+          }, {
+            value: 'Option 2 Label'
+          }]
         }];
+        fieldData.properties.options = fieldData.options;
       }
-
-      Object.observe(fieldData, function (changes) {
-        // console.log(changes);
-        changes.forEach(function (change) {
-          //   // Any time name or title change, update the greeting
-          //   if (change.name === 'name' || change.name === 'title') {
-          //     updateGreeting();
-          //   }
-        });
-      });
 
       return $('<li/>', fieldData.attrs).data('fieldData', fieldData).html(fieldData.label).removeAttr('type');
     });
@@ -460,13 +472,14 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       cursor: 'move',
       opacity: 0.9,
       beforeStop: function beforeStop(event, ui) {
+        event = event;
         var lastIndex = $('> li', $sortableFields).length - 1,
             curIndex = ui.placeholder.index();
         doCancel = curIndex <= 1 || curIndex === lastIndex;
       },
       start: _helpers.startMoving,
       stop: _helpers.stopMoving,
-      cancel: 'input, .disabled, .sortable-options, .add, .btn, .no-drag',
+      cancel: 'input, .disabled, .sortable-options, .add, .btn, .no-drag, .prev-holder select',
       placeholder: 'frmb-placeholder'
     });
 
@@ -480,14 +493,6 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       start: _helpers.startMoving,
       stop: _helpers.stopMoving,
       revert: 150,
-      change: function change(event, ui) {
-        //fix the logic on this to only hide placeholder for disabledFields.before and after
-        // if (ui.placeholder.index() === 0 || ui.placeholder.index() === $('> li', $sortableFields).last().index()) {
-        //   $(ui.placeholder).hide();
-        // } else {
-        //   $(ui.placeholder).show();
-        // }
-      },
       remove: function remove(event, ui) {
         if (startIndex === 0) {
           cbUL.prepend(ui.item);
@@ -495,16 +500,7 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
           $('li:eq(' + (startIndex - 1) + ')', cbUL).after(ui.item);
         }
       },
-      // beforeStop: function(event, ui) {
-      //   var lastIndex = $('> li', $sortableFields).length - 1,
-      //     curIndex = ui.placeholder.index();
-      //   doCancel = ((curIndex <= 1) || (curIndex === lastIndex) ? true : false);
-      //   if (ui.placeholder.parent().hasClass('frmb-control')) {
-      //     doCancel = true;
-      //   }
-      // },
       update: function update(event, ui) {
-        // _helpers.stopMoving;
         elem.stopIndex = $('li', $sortableFields).index(ui.item) === 0 ? '0' : $('li', $sortableFields).index(ui.item);
         if ($('li', $sortableFields).index(ui.item) < 0) {
           $(this).sortable('cancel');
@@ -554,7 +550,7 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
         // Load default fields if none are set
         if (opts.defaultFields.length) {
           for (var i = opts.defaultFields.length - 1; i >= 0; i--) {
-            appendNewField(opts.defaultFields[i]);
+            appendField(opts.defaultFields[i]);
           }
         } else {
           $formWrap.addClass('empty').attr('data-content', opts.labels.getStarted);
@@ -579,56 +575,6 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       appendField(fieldData);
       $formWrap.removeClass('empty');
       disabledBeforeAfter();
-    };
-
-    // add select dropdown
-    var appendSelectList = function appendSelectList(values) {
-
-      if (!values.values || !values.values.length) {
-        values.values = [{
-          selected: 'false',
-          value: {
-            label: 'Option 1',
-            value: 'option-1'
-          }
-        }, {
-          selected: 'false',
-          value: {
-            label: 'Option 2',
-            value: 'option-2'
-          }
-        }];
-      }
-
-      var field = '',
-          name = _helpers.safename(values.name),
-          multiDisplay = values.type === 'checkbox-group' ? 'none' : 'none';
-
-      field += fieldProperties(values);
-      field += '<div class="false-label">' + opts.labels.selectOptions + '</div>';
-      field += '<div class="fields">';
-
-      field += '<div class="allow-multi" style="display:' + multiDisplay + '">';
-      field += '<input type="checkbox" id="multiple_' + lastID + '" name="multiple"' + (values.multiple ? 'checked="checked"' : '') + '>';
-      field += '<label class="multiple" for="multiple_' + lastID + '">' + opts.labels.selectionsMessage + '</label>';
-      field += '</div>';
-      field += '<ol class="sortable-options">';
-      for (i = 0; i < values.values.length; i++) {
-        field += selectFieldOptions(values.values[i].value, name, values.values[i].selected, values.multiple);
-      }
-      field += '</ol>';
-      field += '<div class="field_actions"><a href="#" class="add add-option"><strong>' + opts.labels.add + '</strong></a> | <a href="#" class="close_field">' + opts.labels.close + '</a></div>';
-      field += '</div>';
-      appendFieldLi(opts.labels.select, field, values);
-
-      $('.sortable-options').sortable({
-        // stop: function (event, ui) {
-        //   if ($.browser.msie && parseInt($.browser.version, 10) < 9) {
-        //     $("li a.btn.remove", $(this)).css("display", "inline-block");
-        //     $("li:eq(0) .remove, li:eq(1) .remove", $(this)).css("display", "none");
-        //   }
-        // }
-      }); // making the dynamically added option fields sortable.
     };
 
     var appendField = function appendField(fieldData) {
@@ -700,61 +646,48 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
      * @return {string}        markup for advanced fields
      */
     var fieldProperties = function fieldProperties(properties) {
-      console.log(properties);
-      var fieldProperties = properties.map(function (property) {
+      return properties.map(function (property) {
         var field = _helpers.markup('div', {
-          'class': 'field-property ' + property + '-wrap'
-        }, fieldSetting(property, properties[property]));
+          'class': 'field-property ' + property.name + '-wrap'
+        }, fieldSetting(property));
         return field;
       });
-
-      return fieldProperties;
     };
 
-    var fieldSetting = function fieldSetting(property, value) {
-      var type = arguments.length <= 2 || arguments[2] === undefined ? 'text' : arguments[2];
-      var label = arguments.length <= 3 || arguments[3] === undefined ? '' : arguments[3];
+    var fieldSetting = function fieldSetting(property) {
+      var name = arguments.length <= 1 || arguments[1] === undefined ? 'field' : arguments[1];
 
-      var propertyId = (property + '-' + lastID).replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(),
-          setting = [],
-          options = [],
-          fields = [];
+      console.log(property);
+      name = property.name || name;
+      var propertyId = (name + '-' + lastID).replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(),
+          label = property.label || opts.labels[name.toCamelCase()] || '',
+          options = property.options || [],
+          fields = property.fields || [],
+          type = property.type || 'text',
+          value = property.value || '',
+          setting = [];
 
-      if (value.options) {
-        fields = fieldSetting(property, value.options);
+      if (property.options) {
+        options = property.options.map(function (val) {
+          return fieldSetting(val, name);
+        });
+
+        fields = _helpers.markup('div', {
+          'class': 'property-options'
+        }, options);
       }
 
-      label = value.label || label || opts.labels[property.toCamelCase()] || property.toUpperCase();
-      type = value.type || type;
-      value = value.value || value;
+      setting.push(_helpers.markup('input', {
+        type: type,
+        name: propertyId,
+        value: value,
+        id: propertyId,
+        'class': 'edit-' + name
+      }));
 
-      if ($.isArray(value)) {
-        options = value.map(function (val, index) {
-          return fieldSetting(property + index, val, type, label);
-        });
-        setting.push(_helpers.markup('div', {
-          'class': 'property-options'
-        }, options));
-        // } else if (typeof value === 'object' && !value.fields) {
-        // console.log(value.fields);
-        //   for (var prop in value.fields) {
-        //     if (value.fields.hasOwnProperty(prop)) {
-        //       fieldSetting(prop, value.fields[prop], type, label);
-        //     }
-        //   }
-      } else {
-          setting.push(_helpers.markup('input', {
-            type: type,
-            name: propertyId,
-            value: value,
-            id: propertyId,
-            'class': 'edit-' + property
-          }));
-
-          setting.push(_helpers.markup('label', {
-            'for': propertyId
-          }, label));
-        }
+      setting.push(_helpers.markup('label', {
+        'for': propertyId
+      }, label));
 
       setting.push(setting, fields);
 
@@ -796,12 +729,11 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       field.autocomplete = field.text;
 
       field.select = function (fieldData) {
-        console.log(fieldData);
         var options = undefined,
             attrs = fieldData.attrs,
             i = undefined;
-        for (i = fieldData.options - 1; i >= 0; i--) {
-          console.log(fieldData.options[i]);
+        fieldData.options.reverse();
+        for (i = fieldData.options.length - 1; i >= 0; i--) {
           options += '<option value="' + fieldData.options[i].value + '">' + fieldData.options[i].label + '</option>';
         }
         return '<' + attrs.type + '>' + options + '</' + attrs.type + '>';
