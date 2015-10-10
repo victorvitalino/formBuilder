@@ -9,6 +9,7 @@ var gulp = require('gulp'),
   bsync = require('browser-sync'),
   jshint = require('gulp-jshint'),
   concat = require('gulp-concat'),
+  base64 = require('gulp-base64'),
   header = require('gulp-header'),
   cssmin = require('gulp-cssmin'),
   pkg = require('./package.json'),
@@ -57,6 +58,7 @@ gulp.task('css', function() {
     .pipe(autoprefixer({
       cascade: true
     }))
+    .pipe(base64())
     .pipe(cssmin())
     .pipe(header(banner, {
       pkg: pkg,
