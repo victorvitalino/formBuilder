@@ -237,7 +237,7 @@ ol.sortable-options li {
   display: block !important;
 }
 
-.property-options {
+.property-options-1 {
   float: right;
   width: calc(78% - 4px);
   background: #eee;
@@ -252,6 +252,37 @@ ol.sortable-options li {
   label {
     float: none;
     width: auto;
+  }
+}
+
+.property-options-2 {
+  position: relative;
+  padding-bottom: 5px;
+  background: $white;
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+
+  &:before {
+    content: '+';
+    position: absolute;
+    left: -24px;
+    width: 24px;
+    height: 100%;
+    text-align: center;
+    background: $white;
+  }
+
+  .options-wrap & {
+    input[type=text] {
+      margin-right: 5px;
+      width: 40%;
+    }
+
+    label {
+      display: none;
+    }
   }
 }
 

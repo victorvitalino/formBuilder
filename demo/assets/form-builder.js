@@ -8,10 +8,6 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
 (function ($) {
   'use strict';
   var FormBuilder = function FormBuilder(element, options) {
-    // var ZeroClipboard = window.ZeroClipboard;
-    var ZeroClipboard = function ZeroClipboard() {
-      return false;
-    };
 
     var defaults = {
       // Uneditable fields or other content you would like to
@@ -62,7 +58,6 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
         editNames: 'Edit Names',
         editorTitle: 'Form Elements',
         editXML: 'Edit XML',
-        fieldVars: 'Field Variables',
         fieldRemoveWarning: 'Are you sure you want to remove this field?',
         getStarted: 'Drag a field from the right to this area',
         hide: 'Edit',
@@ -77,7 +72,7 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
         off: 'Off',
         on: 'On',
         optional: 'optional',
-        optionas: 'Options',
+        options: 'Options',
         optionLabelPlaceholder: 'Label',
         optionValuePlaceholder: 'Value',
         optionEmpty: 'Option value required',
@@ -96,7 +91,6 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
         selectionsMessage: 'Allow Multiple Selections',
         text: 'Text Field',
         warning: 'Warning!',
-        viewVars: 'View Field Variables',
         viewXML: 'View XML',
         yes: 'Yes'
       }
@@ -202,22 +196,6 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
     _helpers.nameAttr = function (type) {
       var epoch = new Date().getTime();
       return type + '-' + epoch;
-    };
-
-    // update preview to label
-    _helpers.updateMultipleSelect = function () {
-      $sortableFields.on('change', 'input[name="multiple"]', function () {
-        var options = $(this).parents('.fields:eq(0)').find('.sortable-options input.select-option');
-        if (this.checked) {
-          options.each(function () {
-            $(this).prop('type', 'checkbox');
-          });
-        } else {
-          options.each(function () {
-            $(this).removeAttr('checked').prop('type', 'radio');
-          });
-        }
-      });
     };
 
     _helpers.htmlEncode = function (value) {
@@ -345,6 +323,35 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
         type: 'checkbox'
       };
 
+      // options need a field for value, label and checkbox to select
+      if (fieldData.options) {
+        var optionFields = fieldData.options.map(function (elem, index) {
+          var option = {
+            options: [],
+            type: 'none'
+          };
+          for (var prop in elem) {
+            if (elem.hasOwnProperty(prop)) {
+              var _field = {
+                value: elem[prop],
+                label: prop,
+                name: 'option-' + prop
+              };
+              if ('selected' === prop) {
+                _field.type = 'checkbox';
+              }
+              option.options.push(_field);
+            }
+          }
+          return option;
+        });
+        properties.options = {
+          options: optionFields,
+          label: opts.labels.options,
+          type: 'none'
+        };
+      }
+
       delete properties.type;
 
       sortedProperties = _helpers.uniqueArray(defaultOrder.concat(Object.keys(properties))).map(function (elem) {
@@ -395,22 +402,24 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
           required: {
             value: 1,
             type: 'checkbox'
-          }
+          },
+          name: _helpers.nameAttr(elem)
         }
       };
 
-      fieldData.properties = prepProperties(fieldData);
-
       if ($.inArray(elem, ['select', 'checkbox-group', 'radio-group']) !== -1) {
         fieldData.options = [{
-          fields: [{
-            value: 'Option 1 Label'
-          }, {
-            value: 'Option 2 Label'
-          }]
+          selected: false,
+          value: 'option-1-value',
+          label: 'Option 1 Label'
+        }, {
+          selected: false,
+          value: 'option-2-value',
+          label: 'Option 2 Label'
         }];
-        fieldData.properties.options = fieldData.options;
       }
+
+      fieldData.properties = prepProperties(fieldData);
 
       return $('<li/>', fieldData.attrs).data('fieldData', fieldData).html(fieldData.label).removeAttr('type');
     });
@@ -450,15 +459,10 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       'class': 'save-btn-wrap',
       title: opts.labels.save
     }).html('<a class="save fb-button primary"><span>' + opts.labels.save + '</span></a>'),
-        viewVars = $('<a/>', {
-      id: frmbID + '-view-vars',
-      'class': 'view-vars',
-      title: opts.labels.viewVars
-    }).html(opts.labels.viewVars),
         actionLinksInner = $('<div/>', {
       id: frmbID + '-action-links-inner',
       'class': 'action-links-inner'
-    }).append(editXML, ' | ', viewVars, ' | ', editNames, ' | ', allowSelect, ' | ', clearAll, ' |&nbsp;'),
+    }).append(editXML, ' | ', editNames, ' | ', allowSelect, ' | ', clearAll, ' |&nbsp;'),
         devMode = $('<span/>', {
       'class': 'dev-mode-link'
     }).html(opts.labels.devMode + ' ' + opts.labels.off),
@@ -577,6 +581,11 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       disabledBeforeAfter();
     };
 
+    /**
+     * Append our field to the stage
+     * @param  {object} fieldData
+     * @return {string}           markup for our field, includes properties and preview
+     */
     var appendField = function appendField(fieldData) {
       var li = '',
           delBtn = _helpers.markup('a', {
@@ -655,39 +664,57 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
     };
 
     var fieldSetting = function fieldSetting(property) {
-      var name = arguments.length <= 1 || arguments[1] === undefined ? 'field' : arguments[1];
+      var depth = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
 
-      console.log(property);
-      name = property.name || name;
-      var propertyId = (name + '-' + lastID).replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(),
-          label = property.label || opts.labels[name.toCamelCase()] || '',
-          options = property.options || [],
+      var name = property.name || '',
+          propertyId = (name + '-' + lastID).replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(),
+          label = property.label || opts.labels[name.toCamelCase()] || false,
           fields = property.fields || [],
           type = property.type || 'text',
           value = property.value || '',
           setting = [];
 
       if (property.options) {
-        options = property.options.map(function (val) {
-          return fieldSetting(val, name);
+        depth++;
+        fields = property.options.map(function (val) {
+          return fieldSetting(val, depth);
         });
 
         fields = _helpers.markup('div', {
-          'class': 'property-options'
-        }, options);
+          'class': 'property-options-' + depth
+        }, fields);
       }
 
-      setting.push(_helpers.markup('input', {
-        type: type,
-        name: propertyId,
-        value: value,
-        id: propertyId,
-        'class': 'edit-' + name
-      }));
+      if ('none' !== type) {
 
-      setting.push(_helpers.markup('label', {
-        'for': propertyId
-      }, label));
+        var attrs = {
+          type: type,
+          name: propertyId,
+          value: value,
+          id: propertyId,
+          'class': 'edit-' + name
+        };
+
+        if (depth === 2) {
+          attrs.placeholder = label.charAt(0).toUpperCase() + label.slice(1);
+        } else if (depth === 1) {
+          setting.push(_helpers.markup('span', {
+            'class': 'handle'
+          }));
+
+          setTimeout(function () {
+            $('.property-options-1', document.getElementById('frm-' + lastID + '-item')).sortable();
+          }, 1000);
+        }
+
+        setting.push(_helpers.markup('input', attrs));
+      }
+
+      if (label) {
+        setting.push(_helpers.markup('label', {
+          'for': propertyId
+        }, label));
+      }
 
       setting.push(setting, fields);
 
@@ -701,7 +728,8 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
      */
     var fieldPreview = function fieldPreview(fieldData) {
 
-      var field = {};
+      var field = {},
+          type = fieldData.attrs.type.toCamelCase();
 
       field.text = function (fieldData) {
         var fieldAttrs = attrString(fieldData.attrs),
@@ -711,6 +739,7 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
             fieldLabel = '<label for="' + fieldData.attrs.id + '">' + fieldData.label + '</label>',
             templates = {};
 
+        console.log(fieldData);
         templates.text = fieldLabel + field;
         templates.password = templates.text;
         templates.autocomplete = templates.text;
@@ -719,7 +748,7 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
         templates.radio = templates.checkbox;
         templates.textArea = fieldLabel + textArea;
 
-        return templates[fieldData.attrs.type];
+        return templates[type];
       };
 
       field.password = Object.assign(field.text);
@@ -731,39 +760,30 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       field.select = function (fieldData) {
         var options = undefined,
             attrs = fieldData.attrs,
+            option = function option(opt) {
+          var selected = opt.selected ? 'selected' : '';
+          return '<option value="' + opt.value + '" ' + selected + '>' + opt.label + '</option>';
+        },
             i = undefined;
         fieldData.options.reverse();
         for (i = fieldData.options.length - 1; i >= 0; i--) {
-          options += '<option value="' + fieldData.options[i].value + '">' + fieldData.options[i].label + '</option>';
+          options += option(fieldData.options[i]);
         }
         return '<' + attrs.type + '>' + options + '</' + attrs.type + '>';
       };
 
-      return '<div class="prev-holder">' + field[fieldData.attrs.type](fieldData) + '</div>';
-    };
+      field.checkboxGroup = function (fieldData) {
+        return fieldData.options.forEach(function (option) {
+          fieldData.attrs.type = fieldData.attrs.type.replace('-group', '');
+          fieldData.attrs.value = option.value;
+          fieldData = Object.assign(fieldData, option);
+          console.log(fieldData.attrs.type);
+          field[fieldData.attrs.type](fieldData);
+        });
+      };
+      field.radioGroup = field.checkboxGroup;
 
-    // Select field html, since there may be multiple
-    var selectFieldOptions = function selectFieldOptions(values, name, selected, multiple) {
-      var selectedType = multiple ? 'checkbox' : 'radio';
-
-      if (typeof values !== 'object') {
-        values = {
-          label: '',
-          value: ''
-        };
-      } else {
-        values.label = values.hasOwnProperty('label') ? values.label : '';
-        values.value = values.hasOwnProperty('value') ? values.value : '';
-      }
-
-      field = '<li>';
-      field += '<input type="' + selectedType + '" ' + selected + ' class="select-option" name="' + name + '" />';
-      field += '<input type="text" class="option-label" placeholder="' + opts.labels.optionLabelPlaceholder + '" value="' + values.label + '" />';
-      field += '<input type="text" class="option-value" placeholder="' + opts.labels.optionValuePlaceholder + '" value="' + values.value + '" />';
-      field += '<a href="#" class="remove btn" title="' + opts.labels.removeMessage + '">' + opts.labels.remove + '</a>';
-      field += '</li>';
-
-      return field;
+      return '<div class="prev-holder">' + field[type](fieldData) + '</div>';
     };
 
     // ---------------------- UTILITIES ---------------------- //
@@ -819,8 +839,6 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       }
     });
 
-    _helpers.updateMultipleSelect();
-
     // format name attribute
     $sortableFields.on('keyup', '.edit-name', function () {
       $(this).val(_helpers.safename($(this).val()));
@@ -839,50 +857,44 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
     $sortableFields.on('click', '.del-button', function (e) {
       e.preventDefault();
 
-      // lets see if the user really wants to remove this field... FOREVER
-      var fieldWarnH3 = $('<h3/>').html('<span></span>' + opts.labels.warning),
-          deleteID = $(this).attr('id').replace(/del_/, ''),
-          delBtn = $(this),
-          $field = $(document.getElementById('frm-' + deleteID + '-item')),
-          toolTipPageX = delBtn.offset().left - $(window).scrollLeft(),
-          toolTipPageY = delBtn.offset().top - $(window).scrollTop();
+      var $field = $(this).parents('.form-field:eq(0)');
 
-      if (opts.showWarning) {
-        jQuery('<div />').append(fieldWarnH3, opts.labels.fieldRemoveWarning).dialog({
-          modal: true,
-          resizable: false,
-          width: 300,
-          dialogClass: 'ite-warning',
-          open: function open() {
-            $('.ui-widget-overlay').css({
-              'opacity': 0.0
-            });
-          },
-          position: [toolTipPageX - 282, toolTipPageY - 178],
-          buttons: [{
-            text: opts.labels.yes,
-            click: function click() {
-              $field.slideUp(250, function () {
-                $(this).remove();
-                _helpers.save();
-              });
-              $(this).dialog('close');
-            }
-          }, {
-            text: opts.labels.no,
-            'class': 'cancel',
-            click: function click() {
-              $(this).dialog('close');
-            }
-          }]
-        });
+      if (opts.showWarning || true) {
+        // double check that the user really wants to remove the field
+        showRemoveWarning($field);
       } else {
-        $field.slideUp(250, function () {
-          $(this).remove();
-          _helpers.save();
-        });
+        _helpers.removeField($field);
       }
     });
+
+    var showRemoveWarning = function showRemoveWarning($field) {
+      var fieldWarnH3 = $('<h3/>').html('<span></span>' + opts.labels.warning);
+      $('<div />').append(fieldWarnH3, opts.labels.fieldRemoveWarning).dialog({
+        modal: true,
+        resizable: false,
+        width: 300,
+        dialogClass: 'ite-warning',
+        buttons: [{
+          text: opts.labels.yes,
+          click: function click() {
+            _helpers.removeField($field);
+            $(this).dialog('close');
+          }
+        }, {
+          text: opts.labels.no,
+          click: function click() {
+            $(this).dialog('close');
+          }
+        }]
+      });
+    };
+
+    _helpers.removeField = function ($field) {
+      $field.slideUp(250, function () {
+        $(this).remove();
+        _helpers.save();
+      });
+    };
 
     // Attach a callback to toggle required asterisk
     $sortableFields.on('click', '.edit-required', function () {
@@ -892,7 +904,7 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
 
     // Attach a callback to toggle roles visibility
     $sortableFields.on('click', '.edit-roles', function () {
-      var roles = $(this).siblings('.property-options'),
+      var roles = $(this).siblings('.property-options-1'),
           enableRolesCB = $(this);
       roles.slideToggle(250, function () {
         if (!enableRolesCB.is(':checked')) {
@@ -901,35 +913,14 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       });
     });
 
-    // Attach a callback to add new checkboxes
-    $sortableFields.on('click', '.add-checkbox', function () {
-      $(this).parent().before(selectFieldOptions());
-      return false;
-    });
-
     $sortableFields.on('mouseenter', 'li.disabled .form-element', function () {
       _helpers.disabledTT($(this));
     });
 
-    // Attach a callback to add new options
-    $sortableFields.on('click', '.add-option', function (e) {
-      e.preventDefault();
-      var isMultiple = $(this).parents('.fields').first().find('input[name="multiple"]')[0].checked,
-          name = $(this).parents('.fields').find('.select-option:eq(0)').attr('name');
-      $(this).parents('.fields').first().find('.sortable-options').append(selectFieldOptions(false, name, false, isMultiple));
-      _helpers.updateMultipleSelect();
-    });
-
     // Attach a callback to close link
-    $sortableFields.on('click', '.close_field', function (e) {
+    $sortableFields.on('click', '.close-field', function (e) {
       e.preventDefault();
       $(this).parents('li.form-field').find('.toggle-form').trigger('click');
-    });
-
-    // Attach a callback to add new radio fields
-    $sortableFields.delegate('click', '.add_rd', function (e) {
-      e.preventDefault();
-      $(this).parent().before(selectFieldOptions(false, $(this).parents('.field-properties').attr('id')));
     });
 
     $('.field-properties .fields .remove, .frmb .del-button').on('hover', function () {
@@ -952,55 +943,15 @@ Author: Kevin Chappell <kevin.b.chappell@gmail.com>
       });
     });
 
-    // View Field Vars
-    $(document.getElementById(frmbID + '-view-vars')).click(function (e) {
-      e.preventDefault();
-      var fieldVars = '<table width="100%">';
-      fieldVars += '<tr><td width="50%" height="30"><strong>' + opts.labels.fieldVars + '</strong></td><td align="center"><strong>' + opts.labels.copy + '</strong></td></tr>';
-      $sortableFields.children('li').not('.disabled').each(function () {
-        fieldVars += '<tr><td>$__' + $('input[name="name"]', $(this)).val() + '__</td><td align="center"><span id=' + $('input[name="name"]', $(this)).val() + '_' + Math.random().toString(36).substr(2, 6) + '_var" class="copy-var clipboard" data-clipboard-text="$__' + $('input[name="name"]', $(this)).val() + '__"></span></td></tr>';
-      });
-      fieldVars += '</table>';
-
-      $('<div />').html(fieldVars).dialog({
-        modal: true,
-        width: 400,
-        dialogClass: 'spigit-field-vars',
-        overlay: {
-          color: '#333333'
-        },
-        open: function open() {
-          $('.copy-var').each(function () {
-            var thisID = $(this).attr('id');
-            var clip = new ZeroClipboard(document.getElementById(thisID));
-            clip.on('load', function (client) {
-              client.on('complete', function () {
-                $('.copy-var').removeClass('copied');
-                $(this).addClass('copied');
-              });
-            });
-          });
-        }
-      });
-    });
-
     // Clear all fields in form editor
+    // @todo refactor, this no longer accounts for new data model
     $(document.getElementById(frmbID + '-clear-all')).click(function (e) {
       e.preventDefault();
       if (window.confirm(opts.labels.clearAllMessage)) {
         $sortableFields.empty();
         elem.val('');
         _helpers.save();
-        var values = {
-          label: [opts.labels.descriptionField],
-          name: ['content'],
-          required: 'true',
-          description: opts.labels.mandatory
-        };
-
-        appendNewField(values);
-        $sortableFields.prepend(opts.disableFields.before);
-        $sortableFields.append(opts.disableFields.after);
+        elem.getTemplate();
       }
     });
 
