@@ -94,6 +94,11 @@
       _helpers = {};
 
 
+    /**
+     * Remove duplicates from an array of elements
+     * @param  {array} arrArg array with possible duplicates
+     * @return {array}        array with only unique values
+     */
     _helpers.uniqueArray = (arrArg) => {
       return arrArg.filter((elem, pos, arr) => {
         return arr.indexOf(elem) === pos;
@@ -214,6 +219,7 @@
         if ($(this).val() === '') {
           var field = $(this).parents('li.form-field'),
             fieldAttr = $(this);
+
           errors.push({
             field: field,
             error: opts.labels.labelEmpty,
@@ -274,8 +280,8 @@
     /**
      * Generate markup wrapper where needed
      * @param  {string} type
-     * @param  {Object} attrs
-     * @param  {String} content we wrap this
+     * @param  {object} attrs
+     * @param  {string} content we wrap this
      * @return {string}
      */
     _helpers.markup = function(type, attrs = {}, content = '') {
@@ -287,14 +293,13 @@
     };
 
 
-
     /**
      * Prepare the properties for the field so they can be generated and edited later on.
      * @param  {object} fieldData
      * @return {array}            an array of property objects
      */
     var prepProperties = function(fieldData) {
-
+console.log(fieldData);
       var properties = Object.assign({}, {
           label: fieldData.label
         }, fieldData.attrs, fieldData.meta),
@@ -341,6 +346,7 @@
           }
           return option;
         });
+
         properties.options = {
           options: optionFields,
           label: opts.labels.options,
@@ -370,20 +376,34 @@
       elem = $(element),
       frmbID = 'frmb-' + $('ul[id^=frmb-]').length++;
 
-    var field = '',
-      lastID = 1,
+    var lastID = 1,
       boxID = frmbID + '-control-box';
 
-    var fieldTypes = [
-      'text',
-      'autocomplete',
-      'select',
-      'rich-text',
-      'date',
-      'radio-group',
-      'checkbox',
-      'checkbox-group'
-    ];
+    var fieldTypes = [{
+      id: 'text',
+      class: 'icon-text'
+    }, {
+      id: 'autocomplete',
+      class: 'icon-autocomplete'
+    }, {
+      id: 'select',
+      class: 'icon-select'
+    }, {
+      id: 'rich-text',
+      class: 'icon-rich-text'
+    }, {
+      id: 'date',
+      class: 'icon-calendar'
+    }, {
+      id: 'radio-group',
+      class: 'icon-radio-group'
+    }, {
+      id: 'checkbox',
+      class: 'icon-checkbox'
+    }, {
+      id: 'checkbox-group',
+      class: 'icon-checkbox-group'
+    }];
 
     // Create draggable fields for formBuilder
     var cbUL = $('<ul/>', {
@@ -394,8 +414,8 @@
     // Setup the input fields
     var frmbFields = fieldTypes.map(function(elem) {
 
-      // be sure element is converted to camelCase to get label
-      let fieldLabel = elem.toCamelCase(),
+      // be sure elem.ident is converted to camelCase to get label
+      let fieldLabel = elem.id.toCamelCase(),
         fieldData = {
           label: opts.labels[fieldLabel],
           meta: {
@@ -403,17 +423,17 @@
             roles: opts.roles
           },
           attrs: {
-            type: elem,
-            'class': elem + '-input',
+            type: elem.id,
+            'class': elem.class,
             required: {
               value: 1,
               type: 'checkbox'
             },
-            name: _helpers.nameAttr(elem)
+            name: _helpers.nameAttr(elem.id)
           }
         };
 
-      if ($.inArray(elem, ['select', 'checkbox-group', 'radio-group']) !== -1) {
+      if ($.inArray(elem.id, ['select', 'checkbox-group', 'radio-group']) !== -1) {
         fieldData.options = [{
           selected: false,
           value: 'option-1-value',
@@ -704,10 +724,6 @@
         if (depth === 2) {
           attrs.placeholder = label.charAt(0).toUpperCase() + label.slice(1);
         } else if (depth === 1) {
-          setting.push(_helpers.markup('span', {
-            class: 'handle'
-          }));
-
           setTimeout(function() {
             $('.property-options-1', document.getElementById('frm-' + lastID + '-item')).sortable();
           }, 1000);
@@ -745,7 +761,8 @@
           fieldLabel = `<label for="${fieldData.attrs.id}">${fieldData.label}</label>`,
           templates = {};
 
-        console.log(fieldData);
+        console.log(type);
+
         templates.text = fieldLabel + field;
         templates.password = templates.text;
         templates.autocomplete = templates.text;
@@ -753,6 +770,7 @@
         templates.checkbox = field + fieldLabel;
         templates.radio = templates.checkbox;
         templates.textArea = fieldLabel + textArea;
+        templates.richText = templates.textArea;
 
         return templates[type];
       };
@@ -763,6 +781,7 @@
       field.date = field.text;
       field.checkbox = field.text;
       field.autocomplete = field.text;
+      field.richText = field.text;
 
 
       field.select = function(fieldData) {
@@ -1052,4 +1071,5 @@
       element.data('formBuilder', formBuilder);
     });
   };
+
 })(jQuery);

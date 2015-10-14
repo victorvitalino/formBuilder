@@ -107,7 +107,7 @@
     },
     {
       "uid": "206b010525b2181ffa0ad26f52b1762a",
-      "css": "text-input",
+      "css": "text",
       "code": 59400,
       "src": "custom_icons",
       "selected": true,
@@ -138,9 +138,9 @@
       "src": "fontawesome"
     },
     {
-      "uid": "6020aff067fc3c119cdd75daa5249220",
-      "css": "exchange",
-      "code": 59403,
+      "uid": "d3b3f17bc3eb7cd809a07bbd4d178bee",
+      "css": "resize-vertical",
+      "code": 59404,
       "src": "fontawesome"
     }
   ]
