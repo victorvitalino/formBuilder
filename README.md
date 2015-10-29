@@ -17,13 +17,4 @@ jQuery(document).ready(function($) {
 
 ## [Demo](http://kevinchappell.github.io/formBuilder/) ##
 
-## TODO
-- Add parser to render non-editable form.
-- Add callback for `autocomplete` field.
-- HTML5 fields and attributes
-- JSON data as default instead of XML
-- More examples
-
-## Changelog
-- v1.3.0 - Live previews, icon font
-- v1.2.0 - Add default fields, and call-to-action text
+## [Changelog](https://github.com/kevinchappell/formBuilder/blob/master/CHANGELOG.md) ##
