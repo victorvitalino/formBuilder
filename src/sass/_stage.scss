@@ -1,20 +1,41 @@
 .frmb {
+  list-style-type: none;
+  min-height: 200px;
+  border-radius: 5px;
+  margin: 0 0 5px;
+  padding: 0;
+
   li {
     clear: both;
     position: relative;
-    margin-left: 0;
-    margin-bottom: 5px;
+    margin: 0 0 3px;
     background-color: $white;
-    border-radius: 5px;
-    border: 1px solid $white;
-    transition: border 250ms ease-in-out;
     padding: 6px;
 
+    &:first-child {
+      border-radius: 5px 5px 0 0;
+
+      .field-actions {
+        .del-button {
+          border-radius: 0 5px 0 0;
+        }
+      }
+    }
+
+    &:last-child {
+      border-radius: 0 0 5px 5px;
+      margin-bottom: 0;
+    }
+
     &:hover {
-      border: 1px solid $grey-light-30;
+      box-shadow: 0 0 2px $grey;
 
       li:hover {
         background: #fefefe;
+      }
+
+      .field-actions {
+        display: block;
       }
     }
 
@@ -66,39 +87,45 @@
     a.remove {
       opacity: 1;
     }
+  }
 
-    &.cta {
-      font-size: 30px;
-      padding: 20% 0;
-      text-align: center;
+  .field-actions {
+    display: none;
+    float: right;
+    margin: -7px -7px 0 0;
+
+    .btn {
+      cursor: default;
+      line-height: 26px;
+      border-left: 1px solid $grey-light-30;
+      border-bottom: 1px solid $grey-light-30;
+      color: $grey;
+
+      &.del-button {
+        font-size: 20px;
+        border-radius: 0;
+
+        &:hover {
+          border-color: $remove;
+          color: $remove;
+        }
+      }
+
+      &.toggle-form {
+        border-radius: 0 0 0 5px;
+        font-size: 16px;
+
+        &:hover {
+          border-color: $black;
+          color: $black;
+        }
+      }
+
+      &:hover {
+        text-decoration: none;
+        color: $black;
+      }
     }
-  }
-
-  a.btn {
-    border: 1px solid $white;
-    color: $black;
-    display: inline-block;
-    height: 12px;
-    line-height: 13px;
-    text-align: center;
-    text-decoration: none;
-    width: 11px;
-  }
-
-  a.del-button, a.remove {
-    position: absolute;
-    top: -1px;
-    right: -1px;
-    display: inline-block;
-    opacity: 0;
-    padding: 3px 4px;
-    border-radius: 0 5px 0 0;
-    border-color: $grey-light-30;
-  }
-
-  a.del-button:hover, a.remove:hover {
-    border-color: $remove;
-    color: $remove;
   }
 
   li.delete:hover, li:hover li.delete:hover {
@@ -128,6 +155,123 @@
 
   .field-properties {
     display: none;
+    background: #f7f7f7;
+    box-shadow: inset 0 0 2px 0 #999;
+    border-radius: 3px;
+    margin: 13px 0 0;
+    padding: 2%;
+
+    .false-label,
+    .fields {
+      margin-top: 10px;
+    }
+
+    .fields {
+      width: 70%;
+      float: left;
+
+      div {
+        clear: both;
+        position: relative;
+      }
+
+      input[type=checkbox],
+      input[type=radio] {
+        float: left;
+        margin-right: 5px;
+      }
+
+      .remove {
+        right: 11px;
+        top: 50%;
+        margin-top: -11px;
+        border-radius: 0 3px 3px 0;
+      }
+    }
+
+    .fields .add-area .add {
+      clear: both;
+    }
+
+    .sortable-options li:nth-child(1) .remove,
+    .sortable-options li:nth-child(2) .remove {
+      display: none;
+    }
+  }
+
+  ol.sortable-options {
+    margin-top: 0;
+  }
+
+  ol.sortable-options li {
+    cursor: move;
+  }
+
+  .field-properties .fields input[type=text] {
+    width: 39%;
+    margin-right: 2%;
+  }
+
+  .field-properties input[type=text] {
+    width: calc( 80% - 4px);
+    transition: background 250ms ease-in-out;
+    padding: 1%;
+    border: 1px solid #AFAFAB;
+    background-color: $white;
+  }
+
+  .field-properties input[type=text].error {
+    -webkit-border-radius: 0;
+    border-radius: 0;
+    border: 1px solid $error;
+  }
+
+  .field-properties input[type=text].fld-max-length {
+    width: 10%;
+  }
+
+  .field-properties input.field_error {
+    background: $off-white;
+    border: 1px solid #afafab;
+  }
+
+  .field-properties .false-label,
+  .field-properties label {
+    width: 16%;
+    float: left;
+    padding-right: 2%;
+    font-weight: 700;
+    text-align: right;
+  }
+
+  .field-properties label.multiple,
+  .field-properties label.required_label,
+  .field-properties label.roles_label {
+    float: none;
+    display: inline;
+    font-weight: 400;
+    width: auto;
+  }
+
+  .field-properties label em {
+    display: block;
+    font-weight: 400;
+    font-size: 0.75em;
+  }
+
+  .field-properties label.max-length-label {
+    line-height: 1em;
+  }
+
+  .field-properties .allow-multi input {
+    margin-top: 10px;
+  }
+
+  .field-properties .allow-multi,
+  .field-properties .name_wrap,
+  .field-properties .select-option {
+    // display: none;
+
   }
 
   .tooltip {
@@ -137,8 +281,18 @@
   .prev-holder {
     display: block;
 
-    & label {
+    label {
       display: none;
+    }
+
+    textarea {
+      min-height: 70px;
+    }
+  }
+
+  .radio-group, .checkbox-group {
+    label {
+      display: block;
     }
   }
 
@@ -146,9 +300,14 @@
     display: none;
   }
 
-  .field-label, .legend {
-    color: $grey;
+  .field-label {
+    font-size: 1.1em;
+    line-height: 2.15em;
     margin-bottom: 5px;
+  }
+
+  .field-actions {
+    color: $grey;
   }
 
   .disabled .field-label {

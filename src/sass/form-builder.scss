@@ -1,6 +1,13 @@
+@import "bs";
 @import "variables";
 @import "font";
 @import "stage";
+
+* {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
 
 textarea.idea-template {
   display: none;
@@ -38,6 +45,7 @@ textarea.idea-template {
   float: left;
   width: 62%;
   margin-right: 2%;
+  transition: background-color 250ms ease-in-out;
 
   .action-links {
     width: calc( 100% - 141px);
@@ -48,12 +56,17 @@ textarea.idea-template {
   }
 
   &.empty {
+    &.active {
+      background-color: $white;
+    }
+
     &:after {
       content: attr(data-content);
       position: absolute;
       text-align: center;
       top: 50%;
       width: 100%;
+      margin-top: -1em;
     }
   }
 }
@@ -77,22 +90,6 @@ textarea.idea-template {
   padding-right: 2px;
 }
 
-.cb-wrap {
-  h4 {
-    margin-top: 0;
-    color: $grey;
-  }
-
-  .save:hover {
-    color: $success;
-  }
-}
-
-.frmb-wrap h4 {
-  margin-top: 0;
-  color: $grey;
-}
-
 .action-links a.clear-all:hover,
 .del-button:hover,
 ul.frmb span.required {
@@ -109,126 +106,6 @@ ul.frmb span.required {
 
 .action-links a.view-xml:hover {
   color: $black;
-}
-
-.field-properties {
-  background: #f7f7f7;
-  box-shadow: inset 0 0 2px 0 #999;
-  border-radius: 3px;
-  margin: 5px 0 0;
-  padding: 2%;
-}
-
-.field-properties .false-label,
-.field-properties .fields {
-  margin-top: 10px;
-}
-
-.field-properties .fields {
-  width: 70%;
-  float: left;
-}
-
-.field-properties .fields .add-area .add {
-  clear: both;
-}
-
-.field-properties .fields .remove {
-  right: 11px;
-  top: 50%;
-  margin-top: -11px;
-  -webkit-border-radius: 0 3px 3px 0;
-  border-radius: 0 3px 3px 0;
-}
-
-.field-properties .sortable-options li:nth-child(1) .remove,
-.field-properties .sortable-options li:nth-child(2) .remove {
-  display: none;
-}
-
-ol.sortable-options {
-  margin-top: 0;
-}
-
-ol.sortable-options li {
-  cursor: move;
-}
-
-.field-properties .fields div {
-  clear: both;
-  position: relative;
-}
-
-.field-properties .fields input[type=checkbox],
-.field-properties .fields input[type=radio] {
-  float: left;
-  margin-right: 5px;
-}
-
-.field-properties .fields input[type=text] {
-  width: 39%;
-  margin-right: 2%;
-}
-
-.field-properties input[type=text] {
-  width: calc( 80% - 4px);
-  transition: background 250ms ease-in-out;
-  padding: 1%;
-  border: 1px solid #AFAFAB;
-  background-color: $white;
-}
-
-.field-properties input[type=text].error {
-  -webkit-border-radius: 0;
-  border-radius: 0;
-  border: 1px solid $error;
-}
-
-.field-properties input[type=text].fld-max-length {
-  width: 10%;
-}
-
-.field-properties input.field_error {
-  background: $off-white;
-  border: 1px solid #afafab;
-}
-
-.field-properties .false-label,
-.field-properties label {
-  width: 16%;
-  float: left;
-  padding-right: 2%;
-  font-weight: 700;
-  text-align: right;
-}
-
-.field-properties label.multiple,
-.field-properties label.required_label,
-.field-properties label.roles_label {
-  float: none;
-  display: inline;
-  font-weight: 400;
-  width: auto;
-}
-
-.field-properties label em {
-  display: block;
-  font-weight: 400;
-  font-size: 0.75em;
-}
-
-.field-properties label.max-length-label {
-  line-height: 1em;
-}
-
-.field-properties .allow-multi input {
-  margin-top: 10px;
-}
-
-.field-properties .allow-multi,
-.field-properties .name_wrap,
-.field-properties .select-option {
-  // display: none;
 }
 
 .allow-select .field-properties .allow-multi,
@@ -330,10 +207,16 @@ textarea {
 }
 
 .field-properties .fields div:hover,
-.frmb .legend,
 .frmb .prev-holder,
 .frmb .prev-holder * {
   cursor: move;
+}
+
+.prev-holder {
+  input[type=text],
+  textarea {
+    @extend .form-control;
+  }
 }
 
 .prev-holder input[type=checkbox],
@@ -388,47 +271,44 @@ textarea {
   border: 1px solid $white;
 }
 
-.frmb li:hover .del-button,
-.frmb li:hover .toggle-form {
-  filter: alpha(opacity = 100);
-  -moz-opacity: 1;
-  -khtml-opacity: 1;
-  opacity: 1;
-}
-
-.fresh .frmb .legend .element-info {
-  display: inline-block;
-  visibility: visible;
-  line-height: 12px;
-  margin-left: 6px;
+.frmb-control li.ui-sortable-helper {
+  border-radius: 5px !important;
 }
 
 .frmb-control li {
   cursor: move;
   list-style: none;
-  border-radius: 2px;
-  margin: 0 0 5px;
+  margin: 0 0 3px;
   padding: 10px;
   text-align: left;
   background: $white;
   border: 1px solid $white;
+
+  &:first-child {
+    border-radius: 5px 5px 0 0;
+  }
+
+  &:last-child {
+    border-radius: 0 0 5px 5px;
+  }
 
   &:before {
     margin-right: 10px;
   }
 
   &:hover {
-    border: 1px solid $grey-light;
+    box-shadow: 0 0 2px $grey;
   }
 
   &.ui-state-highlight {
+    min-height: 44px;
+    padding: 0;
     background-image: none;
   }
 }
 
-.frmb-control,
-table.form ul.frmb-control {
-  margin: 0;
+.frmb-control {
+  margin: 0 0 20px;
   padding: 0;
   min-width: 208px;
 }
@@ -447,35 +327,6 @@ table.form ul.frmb-control {
 .action-links a.export-xml:hover,
 .toggle-form.closed:hover {
   color: #6fc245;
-}
-
-.toggle-form.open {
-  // line-height: 14px;
-}
-
-a.btn.toggle-form {
-  border-radius: 2px;
-  margin-left: 5px;
-  width: 20px;
-  height: 20px;
-  line-height: 21px;
-  opacity: 0;
-
-  &:hover {
-    border-color: lighten($grey, 40%);
-  }
-
-  &:before {
-    margin: 0;
-  }
-}
-
-ul.frmb {
-  list-style-type: none;
-  min-height: 200px;
-  border: 1px solid #efefef;
-  margin: 0 0 5px;
-  padding: 5px 5px 0;
 }
 
 .formb-field-vars .copy-var {
@@ -547,23 +398,6 @@ ul.frmb {
   padding: 2px 5px;
 }
 
-.fb-button {
-  padding: 5px 10px;
-  background: #00A261;
-  color: $white;
-  border-radius: 5px;
-  cursor: pointer;
-
-  &:hover {
-    text-decoration: none;
-  }
-}
-
-.save-btn-wrap {
-  float: left;
-  width: auto;
-}
-
 .required-asterisk {
   display: none;
   color: $error;
@@ -614,4 +448,9 @@ ul.frmb {
   line-height: 16px;
   margin: 0 5px;
   font-size: 12px;
+  cursor: default;
+}
+
+.form-actions {
+  float: right;
 }

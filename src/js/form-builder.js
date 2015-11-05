@@ -49,7 +49,6 @@
         devMode: 'Developer Mode',
         disableFields: 'These fields cannot be moved.',
         editNames: 'Edit Names',
-        editorTitle: 'Form Elements',
         editXML: 'Edit XML',
         fieldRemoveWarning: 'Are you sure you want to remove this field?',
         getStarted: 'Drag a field from the right to this area',
@@ -76,13 +75,13 @@
         removeMessage: 'Remove Element',
         remove: '&#215;',
         required: 'Required',
-        richText: 'Rich Text Editor',
         roles: 'Limit Access',
         save: 'Save Template',
         selectOptions: 'Select Items',
         select: 'Select',
         selectionsMessage: 'Allow Multiple Selections',
         text: 'Text Field',
+        textarea: 'Text Area',
         warning: 'Warning!',
         viewXML: 'View XML',
         yes: 'Yes'
@@ -299,7 +298,6 @@
      * @return {array}            an array of property objects
      */
     var prepProperties = function(fieldData) {
-console.log(fieldData);
       var properties = Object.assign({}, {
           label: fieldData.label
         }, fieldData.attrs, fieldData.meta),
@@ -389,8 +387,8 @@ console.log(fieldData);
       id: 'select',
       class: 'icon-select'
     }, {
-      id: 'rich-text',
-      class: 'icon-rich-text'
+      id: 'textarea',
+      class: 'icon-text-area'
     }, {
       id: 'date',
       class: 'icon-calendar'
@@ -416,6 +414,7 @@ console.log(fieldData);
 
       // be sure elem.ident is converted to camelCase to get label
       let fieldLabel = elem.id.toCamelCase(),
+        idName = _helpers.nameAttr(elem.id),
         fieldData = {
           label: opts.labels[fieldLabel],
           meta: {
@@ -424,12 +423,10 @@ console.log(fieldData);
           },
           attrs: {
             type: elem.id,
+            name: idName,
             'class': elem.class,
-            required: {
-              value: 1,
-              type: 'checkbox'
-            },
-            name: _helpers.nameAttr(elem.id)
+            required: false,
+            id: idName
           }
         };
 
@@ -454,9 +451,7 @@ console.log(fieldData);
     cbUL.append(frmbFields);
 
     // Build our headers and action links
-    var cbHeader = $('<h4/>').html(opts.labels.editorTitle),
-      frmbHeader = $('<h4/>').html(opts.labels.preview),
-      viewXML = $('<a/>', {
+    var viewXML = $('<a/>', {
         id: frmbID + '-export-xml',
         text: opts.labels.viewXML,
         'class': 'view-xml'
@@ -476,16 +471,19 @@ console.log(fieldData);
         text: opts.labels.editNames,
         'class': 'edit-names'
       }),
-      clearAll = $('<a/>', {
-        id: frmbID + '-clear-all',
+      clearAll = $('<button/>', {
         text: opts.labels.clearAll,
-        'class': 'clear-all'
+        'class': 'clear-all btn btn-default'
       }),
-      saveAll = $('<div/>', {
+      saveBtn = $('<button/>', {
         id: frmbID + '-save',
-        'class': 'save-btn-wrap',
-        title: opts.labels.save
-      }).html('<a class="save fb-button primary"><span>' + opts.labels.save + '</span></a>'),
+        text: opts.labels.save,
+        'class': 'save btn btn-primary'
+      }),
+      formActions = $('<div/>', {
+        id: frmbID + '-actions',
+        'class': 'form-actions btn-group'
+      }),
       actionLinksInner = $('<div/>', {
         id: frmbID + '-action-links-inner',
         'class': 'action-links-inner'
@@ -498,6 +496,8 @@ console.log(fieldData);
         'class': 'action-links'
       }).append(actionLinksInner, devMode);
 
+    formActions.append(clearAll, saveBtn);
+
     // Sortable fields
     var $sortableFields = $('<ul/>').attr('id', frmbID).addClass('frmb').sortable({
       cursor: 'move',
@@ -507,6 +507,9 @@ console.log(fieldData);
         var lastIndex = $('> li', $sortableFields).length - 1,
           curIndex = ui.placeholder.index();
         doCancel = ((curIndex <= 1) || (curIndex === lastIndex));
+      },
+      over: function(event) {
+        $(event.target).parent().addClass('active');
       },
       start: _helpers.startMoving,
       stop: _helpers.stopMoving,
@@ -547,12 +550,16 @@ console.log(fieldData);
     });
 
     // Replace the textarea with sortable list.
-    elem.before($sortableFields).parent().prepend(frmbHeader).addClass('frmb-wrap').append(actionLinks, viewXML, saveAll);
+    elem
+      .before($sortableFields)
+      .parent()
+      .addClass('frmb-wrap')
+      .append(actionLinks, viewXML);
 
     var cbWrap = $('<div/>', {
       id: frmbID + '-cb-wrap',
       'class': 'cb-wrap'
-    }).append(cbHeader, cbUL);
+    }).append(cbUL, formActions);
 
     var $formWrap = $('.frmb-wrap').before(cbWrap).append(actionLinks);
 
@@ -602,7 +609,6 @@ console.log(fieldData);
 
     var prepFieldVars = function($field) {
       var fieldData = $field.data('fieldData');
-
       appendField(fieldData);
       $formWrap.removeClass('empty');
       disabledBeforeAfter();
@@ -625,9 +631,6 @@ console.log(fieldData);
           'class': 'toggle-form btn icon-pencil',
           title: opts.labels.hide
         }),
-        label = _helpers.markup('span', {
-          'class': 'field-label'
-        }, fieldData.label),
         required = _helpers.markup('span', {
           'class': 'required-asterisk'
         }, '*'),
@@ -635,9 +638,12 @@ console.log(fieldData);
           'class': 'tooltip-element',
           tooltip: fieldData.description
         }, '?') : ''),
-        legend = _helpers.markup('div', {
-          'class': 'legend'
-        }, [delBtn, label, tooltip, required, toggleBtn]);
+        fieldLabel = _helpers.markup('div', {
+          'class': 'field-label'
+        }, fieldData.label, required, tooltip),
+        fieldActions = _helpers.markup('div', {
+          'class': 'field-actions'
+        }, [toggleBtn, delBtn]);
 
 
       var liContent = _helpers.markup('div', {
@@ -648,7 +654,7 @@ console.log(fieldData);
       li = _helpers.markup('li', {
         id: 'frm-' + lastID + '-item',
         'class': fieldData.attrs.type + ' form-field'
-      }, [legend, fieldPreview(fieldData), liContent]);
+      }, [fieldActions, fieldLabel, fieldPreview(fieldData), liContent]);
 
       if (elem.stopIndex) {
         $('li', $sortableFields).eq(elem.stopIndex).after(li);
@@ -750,6 +756,8 @@ console.log(fieldData);
      */
     var fieldPreview = function(fieldData) {
 
+      delete fieldData.attrs.class;
+
       var field = {},
         type = fieldData.attrs.type.toCamelCase();
 
@@ -757,32 +765,39 @@ console.log(fieldData);
         let fieldAttrs = attrString(fieldData.attrs),
           field = `<input ${fieldAttrs}>`,
           value = fieldData.attrs.value || '',
-          textArea = `<textarea ${fieldAttrs}>${value}</textarea>`,
           fieldLabel = `<label for="${fieldData.attrs.id}">${fieldData.label}</label>`,
           templates = {};
-
-        console.log(type);
 
         templates.text = fieldLabel + field;
         templates.password = templates.text;
         templates.autocomplete = templates.text;
         templates.date = templates.text;
-        templates.checkbox = field + fieldLabel;
-        templates.radio = templates.checkbox;
-        templates.textArea = fieldLabel + textArea;
-        templates.richText = templates.textArea;
 
-        return templates[type];
+        return templates[fieldData.attrs.type];
       };
 
 
       field.password = Object.assign(field.text);
       field.email = field.text;
       field.date = field.text;
-      field.checkbox = field.text;
       field.autocomplete = field.text;
-      field.richText = field.text;
 
+
+      field.textarea = function(fieldData) {
+        let fieldAttrs = attrString(fieldData.attrs),
+          value = fieldData.attrs.value || '',
+          textArea = `<textarea ${fieldAttrs}>${value}</textarea>`,
+          fieldLabel = `<label for="${fieldData.attrs.id}">${fieldData.label}</label>`;
+
+          return fieldLabel + textArea;
+      };
+
+      field.checkbox = function(fieldData) {
+        let fieldAttrs = attrString(fieldData.attrs);
+        return `<label for="${fieldData.attrs.id}"><input ${fieldAttrs}> ${fieldData.label}</label>`;
+      };
+
+      field.radio = field.checkbox;
 
       field.select = function(fieldData) {
         let options,
@@ -800,16 +815,21 @@ console.log(fieldData);
       };
 
       field.checkboxGroup = (fieldData) => {
-        return fieldData.options.forEach(function(option) {
-          fieldData.attrs.type = fieldData.attrs.type.replace('-group', '');
-          fieldData.attrs.value = option.value;
-          fieldData = Object.assign(fieldData, option);
-          console.log(fieldData.attrs.type);
-          field[fieldData.attrs.type](fieldData);
+        let preview = [],
+          checkbox = Object.assign({}, fieldData);
+        checkbox.attrs.type = checkbox.attrs.type.replace('-group', '');
+        checkbox.attrs.name = checkbox.attrs.name + '[]';
+        delete checkbox.options;
+        fieldData.options.forEach(function(option) {
+          checkbox.label = option.label;
+          checkbox.attrs.value = option.value;
+          preview.push(field[checkbox.attrs.type](checkbox));
         });
-      };
-      field.radioGroup = field.checkboxGroup;
 
+        return preview.join('');
+      };
+
+      field.radioGroup = field.checkboxGroup;
       return `<div class="prev-holder">${field[type](fieldData)}</div>`;
     };
 
@@ -831,9 +851,9 @@ console.log(fieldData);
     // toggle fields
     $sortableFields.on('click', '.toggle-form', function(e) {
       e.preventDefault();
-      var targetID = $(this).attr('id');
-      $(this).toggleClass('open').parent().next('.prev-holder').slideToggle(250);
-      $(document.getElementById(targetID + '-fld')).slideToggle(250, function() {
+      var $field = document.getElementById($(this).attr('id') + '-item');
+      $('.prev-holder', $field).toggleClass('open').slideToggle(250);
+      $('.field-properties', $field).slideToggle(250, function() {
         // do something after attr toggle
       });
     });
@@ -854,7 +874,7 @@ console.log(fieldData);
       if ($(this).val() !== '') {
         if (!closestToolTip.length) {
           var tt = '<span class="tooltip-element" tooltip="' + $(this).val() + '">?</span>';
-          $('.toggle-form', $(this).closest('li')).before(tt);
+          $('.field-label', $(this).closest('li')).append(tt);
           // _helpers.initTooltip(tt);
         } else {
           closestToolTip.attr('tooltip', $(this).val()).css('display', 'inline-block');
@@ -950,8 +970,10 @@ console.log(fieldData);
       $(this).parents('li.form-field').find('.toggle-form').trigger('click');
     });
 
-    $('.field-properties .fields .remove, .frmb .del-button').on('hover', function() {
-      $(this).parents('li.form-field').toggleClass('delete');
+    $sortableFields.on('hover', '.del-button', function(e) {
+      console.log('hovering!!');
+      var $field = $(this).parents('.form-field:eq(0)');
+      $field.toggleClass('delete');
     });
 
     // View XML
@@ -972,7 +994,7 @@ console.log(fieldData);
 
     // Clear all fields in form editor
     // @todo refactor, this no longer accounts for new data model
-    $(document.getElementById(frmbID + '-clear-all')).click(function(e) {
+    clearAll.click(function(e) {
       e.preventDefault();
       if (window.confirm(opts.labels.clearAllMessage)) {
         $sortableFields.empty();
@@ -980,6 +1002,10 @@ console.log(fieldData);
         _helpers.save();
         elem.getTemplate();
       }
+    });
+
+    clearAll.hover(function() {
+      $(this).toggleClass('btn-danger').toggleClass('btn-default');
     });
 
     // Save Idea Template
@@ -996,7 +1022,7 @@ console.log(fieldData);
       keys = [],
       devCode = '68,69,86';
     // Super secret Developer Tools
-    $('.save.fb-button').mouseover(function() {
+    $('.save.btn').mouseover(function() {
       triggerDevMode = true;
     }).mouseout(function() {
       triggerDevMode = false;
@@ -1054,9 +1080,10 @@ console.log(fieldData);
       $formWrap.toggleClass('edit-xml');
     });
 
-    elem.parent().find('p[id*="ideaTemplate"]').remove();
-    elem.wrap('<div class="template-textarea-wrap"/>');
-    elem.getTemplate();
+    $formWrap.css('min-height', cbUL.height() - 48);
+    elem
+      .wrap('<div class="template-textarea-wrap"/>')
+      .getTemplate();
   };
 
 

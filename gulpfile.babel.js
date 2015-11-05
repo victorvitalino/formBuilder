@@ -141,4 +141,20 @@ gulp.task('release', function() {
   return increment('major');
 });
 
+// Deploy the demo
+gulp.task('deploy', function() {
+  var gitArgs = {
+    args: 'subtree push --prefix demo origin gh-pages'
+  };
+
+  plugins.git.exec(gitArgs, function(err) {
+    if (err) {
+      console.error('There was an error deploying the Demo to gh-pages\n', err);
+      throw err;
+    } else {
+      console.log('Demo was successfully deployed!\n');
+    }
+  });
+});
+
 gulp.task('default', ['js', 'css', 'demoCss', 'watch', 'serve']);
